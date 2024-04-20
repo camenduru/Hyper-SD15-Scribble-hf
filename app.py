@@ -40,19 +40,7 @@ pipe.load_lora_weights("ByteDance/Hyper-SD", weight_name="Hyper-SD15-1step-lora.
 pipe.to("cuda")
 pipe.scheduler = TCDScheduler.from_config(pipe.scheduler.config, timestep_spacing ="trailing")
 
-with gr.Blocks() as demo:
-    block.load(
-        None,
-        None,
-        _js="""
-  () => {
-  const params = new URLSearchParams(window.location.search);
-  if (!params.has('__theme')) {
-    params.set('__theme', 'dark');
-    window.location.search = params.toString();
-  }
-  }""",
-    )
+with gr.Blocks(theme=gr.themes.Soft()) as demo:
     with gr.Column():
         with gr.Row():
             with gr.Column():
