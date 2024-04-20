@@ -48,7 +48,7 @@ with gr.Blocks() as demo:
                 controlnet_scale = gr.Number(label="ControlNet Conditioning Scale", value=1.0, interactive=True)
                 prompt = gr.Text(label="Prompt", value="a photo of a cat", interactive=True)
                 seed = gr.Number(label="Seed", value=3413, interactive=True)
-                scribble = gr.Image(source="canvas", tool="color-sketch", shape=(512, 512), height=768, width=768, type="pil")
+                scribble = gr.ImageEditor(height=768, width=768, type="pil")
                 btn = gr.Button(value="run")
             with gr.Column():
                 output = gr.Gallery(height=768)
@@ -59,7 +59,7 @@ with gr.Blocks() as demo:
                 with torch.inference_mode(), torch.autocast("cuda", dtype=torch.float16), timer("inference"):
                     return pipe(
                         prompt=[prompt]*num_images,
-                        image=[scribble]*num_images,
+                        image=[scribble.resize((512, 512))]*num_images,
                         generator=torch.Generator().manual_seed(int(seed)),
                         num_inference_steps=steps,
                         guidance_scale=0.,
