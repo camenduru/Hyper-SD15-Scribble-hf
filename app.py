@@ -64,7 +64,7 @@ with gr.Blocks() as demo:
                         num_inference_steps=steps,
                         guidance_scale=0.,
                         eta=eta,
-                        controlnet_conditioning_scale=controlnet_scale
+                        controlnet_conditioning_scale=float(controlnet_scale)
                     ).images
 
             reactive_controls = [steps, prompt, controlnet_scale, eta, seed, scribble, num_images]
