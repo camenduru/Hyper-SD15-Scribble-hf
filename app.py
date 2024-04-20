@@ -18,6 +18,17 @@ from scheduling_tcd import TCDScheduler
 
 torch.backends.cuda.matmul.allow_tf32 = True
 
+js_func = """
+function refresh() {
+    const url = new URL(window.location);
+
+    if (url.searchParams.get('__theme') !== 'dark') {
+        url.searchParams.set('__theme', 'dark');
+        window.location.href = url.href;
+    }
+}
+"""
+
 class timer:
     def __init__(self, method_name="timed process"):
         self.method = method_name
@@ -40,7 +51,7 @@ pipe.load_lora_weights("ByteDance/Hyper-SD", weight_name="Hyper-SD15-1step-lora.
 pipe.to("cuda")
 pipe.scheduler = TCDScheduler.from_config(pipe.scheduler.config, timestep_spacing ="trailing")
 
-with gr.Blocks(theme=gr.themes.Monochrome()) as demo:
+with gr.Blocks(js=js_func) as demo:
     with gr.Column():
         with gr.Row():
             with gr.Column():
