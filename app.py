@@ -59,7 +59,7 @@ with gr.Blocks() as demo:
                 with torch.inference_mode(), torch.autocast("cuda", dtype=torch.float16), timer("inference"):
                     return pipe(
                         prompt=[prompt]*num_images,
-                        image=[scribble.resize((512, 512))]*num_images,
+                        image=[scribble['composite'].resize((512, 512))]*num_images,
                         generator=torch.Generator().manual_seed(int(seed)),
                         num_inference_steps=steps,
                         guidance_scale=0.,
