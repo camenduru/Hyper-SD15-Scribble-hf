@@ -3,6 +3,7 @@ import argparse
 import os
 import time
 from os import path
+from PIL import ImageOps
 
 cache_path = path.join(path.dirname(path.abspath(__file__)), "models")
 os.environ["TRANSFORMERS_CACHE"] = cache_path
@@ -42,41 +43,48 @@ with gr.Blocks() as demo:
     with gr.Column():
         with gr.Row():
             with gr.Column():
+                # scribble = gr.Image(source="canvas", tool="color-sketch", shape=(512, 512), height=768, width=768, type="pil")
+                scribble = gr.ImageEditor(type="pil", image_mode="L", crop_size=(512, 512), sources=(), brush=gr.Brush(color_mode="fixed", colors=["#FFFFFF"]))
+                # scribble_out = gr.Image(height=384, width=384)
                 num_images = gr.Slider(label="Number of Images", minimum=1, maximum=8, step=1, value=4, interactive=True)
                 steps = gr.Slider(label="Inference Steps", minimum=1, maximum=8, step=1, value=1, interactive=True)
+                prompt = gr.Text(label="Prompt", value="a photo of a cat", interactive=True)
                 eta = gr.Number(label="Eta (Corresponds to parameter eta (η) in the DDIM paper, i.e. 0.0 eqauls DDIM, 1.0 equals LCM)", value=1., interactive=True)
                 controlnet_scale = gr.Number(label="ControlNet Conditioning Scale", value=1.0, interactive=True)
-                prompt = gr.Text(label="Prompt", value="a photo of a cat", interactive=True)
                 seed = gr.Number(label="Seed", value=3413, interactive=True)
-                scribble = gr.ImageEditor(height=768, width=768, type="pil")
                 btn = gr.Button(value="run")
-            with gr.Column():
-                output = gr.Gallery(height=768)
 
-            @spaces.GPU
-            def process_image(steps, prompt, controlnet_scale, eta, seed, scribble, num_images):
-                global pipe
+            with gr.Column():
+                output = gr.Gallery(height=768, format="png")
+                # output = gr.Image()
+
+        @spaces.GPU
+        def process_image(steps, prompt, controlnet_scale, eta, seed, scribble, num_images):
+            global pipe
+            if scribble:
                 with torch.inference_mode(), torch.autocast("cuda", dtype=torch.float16), timer("inference"):
-                    return pipe(
+                    result = pipe(
                         prompt=[prompt]*num_images,
-                        image=[scribble['composite'].resize((512, 512))]*num_images,
+                        image=[ImageOps.invert(scribble['composite'])]*num_images,
                         generator=torch.Generator().manual_seed(int(seed)),
                         num_inference_steps=steps,
                         guidance_scale=0.,
                         eta=eta,
-                        controlnet_conditioning_scale=float(controlnet_scale)
+                        controlnet_conditioning_scale=float(controlnet_scale),
                     ).images
+                    # result[0].save("test.jpg")
+                    # print(result[0])
+                    return result
+            else:
+                return None
 
-            reactive_controls = [steps, prompt, controlnet_scale, eta, seed, scribble, num_images]
+        reactive_controls = [steps, prompt, controlnet_scale, eta, seed, scribble, num_images]
 
-            for control in reactive_controls:
-                control.change(fn=process_image, inputs=reactive_controls, outputs=[output])
+        for control in reactive_controls:
+            if reactive_controls[-2] is not None:
+                control.change(fn=process_image, inputs=reactive_controls, outputs=[output, ])
 
-            btn.click(process_image, inputs=reactive_controls, outputs=[output])
+        btn.click(process_image, inputs=reactive_controls, outputs=[output, ])
 
 if __name__ == "__main__":
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("--port", default=7891, type=int)
-    # args = parser.parse_args()
-    # demo.launch(server_name="0.0.0.0", server_port=args.port)
     demo.launch()
