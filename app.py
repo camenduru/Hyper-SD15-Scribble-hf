@@ -41,11 +41,23 @@ pipe.to("cuda")
 pipe.scheduler = TCDScheduler.from_config(pipe.scheduler.config, timestep_spacing ="trailing")
 
 with gr.Blocks() as demo:
+    block.load(
+        None,
+        None,
+        _js="""
+  () => {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has('__theme')) {
+    params.set('__theme', 'dark');
+    window.location.search = params.toString();
+  }
+  }""",
+    )
     with gr.Column():
         with gr.Row():
             with gr.Column():
                 # scribble = gr.Image(source="canvas", tool="color-sketch", shape=(512, 512), height=768, width=768, type="pil")
-                scribble = gr.ImageEditor(type="pil", image_mode="L", crop_size=(512, 512), sources=(), brush=gr.Brush(color_mode="fixed", colors=["#000000"]))
+                scribble = gr.ImageEditor(type="pil", image_mode="L", crop_size=(512, 512), sources=(), brush=gr.Brush(color_mode="fixed", colors=["#FFFFFF"]))
                 # scribble_out = gr.Image(height=384, width=384)
                 num_images = gr.Slider(label="Number of Images", minimum=1, maximum=8, step=1, value=4, interactive=True)
                 steps = gr.Slider(label="Inference Steps", minimum=1, maximum=8, step=1, value=1, interactive=True)
@@ -62,12 +74,12 @@ with gr.Blocks() as demo:
         @spaces.GPU
         def process_image(steps, prompt, controlnet_scale, eta, seed, scribble, num_images):
             global pipe
-            if scribble:
+            if scribble:                
                 with torch.inference_mode(), torch.autocast("cuda", dtype=torch.float16), timer("inference"):
                     result = pipe(
                         prompt=[prompt]*num_images,
-                        # image=[ImageOps.invert(scribble['composite'])]*num_images,
-                        image=[scribble['composite']]*num_images,
+                        image=[ImageOps.invert(scribble['composite'])]*num_images,
+                        # image=[scribble['composite']]*num_images,
                         generator=torch.Generator().manual_seed(int(seed)),
                         num_inference_steps=steps,
                         guidance_scale=0.,
